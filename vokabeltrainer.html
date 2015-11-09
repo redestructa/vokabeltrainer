@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="alternate" type="application/rss+xml" title="Domian Podcast &raquo; Feed" href="http://www.zahulo.de/domian.xml" />
+    <title>Vokabeltrainer</title>
+    <meta name="description" content="Live und auch zeitverzögertes Anhören ist möglich. Episode immer sofort verfügbar." />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta name="msvalidate.01" content="E0B92940E2720400FE60EE4D5DB7ADC9" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="keywords" content="domian nachören,domian,nachören,jürgen,neue,inoffizielle,podcast,radioshow,nachtlager,alpha,labs,2013,2014" />
+
+    <script type="text/javascript" src="./jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="./jqui/js/jquery-ui-1.10.4.custom.min.js"></script>
+
+    <link href='http://fonts.googleapis.com/css?family=Alef' rel='stylesheet' type='text/css'>
+    <link href='/screen.css' rel='stylesheet' type='text/css' media="screen">
+    <link href='/jqui/css/ui-lightness/jquery-ui-1.10.3.custom.min.css' rel='stylesheet' type='text/css' media="screen">
+    <script>
+        String.prototype.format =    function(a, b, c, d, e, f, g, h, ii, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) {
+        var newStr = this, i = 0, args = [a, b, c, d, e, f, g, h, ii, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z];
+        while (/%s/.test(newStr))
+            newStr = newStr.replace("%s", args[i++])
+        return newStr;
+    };
+
+        function showText(text, title){
+            var height=300,width=700;
+            title=title || "Text";
+            $( "#textBox").attr("title",title);
+            $( "#textBox textarea").val(text);
+            $( "#textBox textarea").css({
+                "width" : width ,
+                "height" : height
+            });
+            $( "#textBox" ).dialog({
+                resizable: false,
+                height:height+160,
+                width:"auto",
+                modal: false,
+                buttons: {
+                    "Schließen": function() {
+                        $( this ).dialog( "close" );
+                    }
+                }
+            });
+        }
+
+        function openImportWindow(){
+            var height=300,width=700;
+            $( "#textBox").attr("title","Import von Vokabeln, Textstruktur muss aussehen wie bei Export");
+            $( "#textBox textarea").val("");
+            $( "#textBox textarea").css({
+                "width" : width ,
+                "height" : height
+            });
+            $( "#textBox" ).dialog({
+                resizable: false,
+                height:height+160,
+                width:"auto",
+                modal: false,
+                buttons: {
+                    "Abbrechen": function() {
+                        $( this ).dialog( "close" );
+                    },
+                    "OK": function() {
+
+
+                        $( this ).dialog( "close" );
+                        importThisOnConfirm($( "#textBox textarea").val());
+
+                    }
+                }
+            });
+        }
+
+        function importThisOnConfirm(val){
+
+            if (!dictionary.length){
+                importText(val)
+                return;
+            }
+
+            $("#cautionDialog").dialog({
+                resizable: false,
+                height:"auto",
+                width:"auto",
+                modal: false,
+                buttons: {
+                    "Abbrechen": function() {
+                        $( this ).dialog( "close" );
+                    },
+                    "OK": function() {
+                        importText(val)
+                        $( this ).dialog( "close" );
+                    }
+                }
+            });
+        }
+
+        function deleteAll(){
+
+            $("#cautionDialog").dialog({
+                resizable: false,
+                height:"auto",
+                width:"auto",
+                modal: false,
+                buttons: {
+                    "Abbrechen": function() {
+                        $( this ).dialog( "close" );
+                    },
+                    "OK": function() {
+                        dictionary=[];
+                        saveDict();
+                        updateTable();
+                        $( this ).dialog( "close" );
+                    }
+                }
+            });
+
+        }
+
+        function importText(text){
+            dictionary=[];
+            var all = text.split("\n");
+            for (var i in all){
+
+                var t = all[i].split(",");
+
+                if (t.length == 3)
+                dictionary.push({
+                    "foreign" : t[1].trim(),
+                    "german" : t[0].trim(),
+                    "category" : t[2].trim()
+                });
+
+            }
+            saveDict();
+            updateTable();
+        }
+
+        var toasts=[];
+        function toast(text, callback){
+            toasts.push([text, callback]);
+            if (toasts.length == 1){
+                showToast();
+            }
+        }
+        function showToast(){
+            var text = toasts[0][0];
+            var callback = toasts[0][1];
+            var oc = $("<div></div>");
+            var c = $("<div></div>");
+            c.html(text);
+            oc.css({
+                "position":"fixed",
+                "z-index" : "9999999"
+            });
+            c.css({
+                "border":"1px solid black",
+                "text-align":"center",
+                "background" : "#333",
+                "color" : "white",
+                "text-shadow" : "none",
+                "opacity":"0",
+                "font-weight":"bold",
+                "padding":"5px 10px",
+                "border-radius" : "2px"
+            });
+            $(oc).append(c);
+            $("body").append(oc);
+            setTimeout(function(){
+                oc.css({
+                    "top": $(window).height()-oc.height()-60,
+                    "left": $(window).width()/2-oc.width()/2
+                });
+                c.animate({"opacity":"1"}, 200, function(){
+                    if (callback){
+                        callback();
+                    }
+                });
+                setTimeout(function(){
+                    toasts = toasts.splice(1);
+                    if (toasts.length >= 1){
+                        showToast();
+                    }
+                    c.animate({"opacity":"0"}, 200, function(){
+                        oc.remove();
+                    });
+                },2600);
+            },5);
+        }
+        function getTimeStringForDelta(delta){
+
+            var
+                    timeWindows = [
+                        24 * 60 * 60 * 1000,
+                        60 * 60 * 1000,
+                        60 * 1000,
+                        1000
+                    ],
+
+                    timeNames = [
+                        "Tagen",
+                        "Stunden",
+                        "Minuten",
+                        "Sekunden"
+                    ],
+
+                    timeNamesSingular = [
+                        "Tag",
+                        "Stunde",
+                        "Minute",
+                        "Sekunde"
+                    ],
+
+                    i = 0;
+
+            while (i < timeWindows.length){
+
+                if (Math.round(delta/timeWindows[i])*timeWindows[i] >= timeWindows[i]){
+                    var val = Math.round(delta/timeWindows[i]);
+                    if (val == 1){
+                        return val+" "+timeNamesSingular[i];
+                    } else {
+                        return val+" "+timeNames[i];
+                    }
+
+                }
+                i++;
+            }
+            return "0 "+timeNames[timeNames.length-1];
+        }
+    </script>
+    <style>
+        .left, .right{
+
+            display:inline-block;
+            margin-right:20px;
+
+        }
+
+        input.green {
+
+            background-color:#dff5d5;
+
+
+        }
+        input.red {
+
+            background-color:#ff877b;
+
+
+        }
+        input.dred {
+
+            background-color:#a21c1c;
+
+
+        }
+
+        th{text-align: left;background-color:#3d94f6;color: white;text-shadow: none;}
+
+        input {
+
+            max-width:90%;
+            -webkit-transition: background-color 100ms linear;
+            -moz-transition: background-color 100ms linear;
+            -o-transition: background-color 100ms linear;
+            -ms-transition: background-color 100ms linear;
+            transition: background-color 100ms linear;
+
+        }
+
+        #main {
+
+            position:relative;
+            width:95%;
+            margin:auto;
+            margin-top: 20px;
+
+        }
+    </style>
+<script>
+
+    var dictionary = JSON.parse(localStorage.getItem("dict") || "[]");
+
+    var temp = [];
+    for (var i in dictionary){
+        if (dictionary[i] != null){
+            temp.push(dictionary[i]);
+        }
+    }
+    dictionary = temp;
+    sortDict();
+
+    var filter = {
+      "category" : ["*"],
+      "marked"   : null,
+      "maxDelta" : null
+    };
+
+    var safelyDelete = true;
+    var willSkipEvaluation = false;
+
+    function submitF(event, form, isgerman){
+
+        var value = isgerman ? $("#germaninput").val().trim() : $("#fremdinput").val().trim();
+
+        if (value==""){
+            toast("Bitte gib eine Vokabel ein!");
+            event.preventDefault();
+            return false;
+        }
+
+        var entry = {};
+
+        entry["german"] = $("#germaninput").val().trim();
+        entry["foreign"] = $("#fremdinput").val().trim();
+        entry["category"] = $("#formcat").val().trim();
+
+        localStorage.setItem("category", entry["category"]);
+
+        if ($("#fremdinput").val().trim() ==""){
+            $("#fremdinput").focus();
+        }
+
+        else if ($("#germaninput").val().trim() ==""){
+            $("#germaninput").focus();
+        }
+
+        else {
+            $("#germaninput").val("");
+            $("#fremdinput").val("");
+
+            if (isgerman){
+                $("#fremdinput").focus();
+            } else {
+                $("#germaninput").focus();
+            }
+
+
+
+            dictionary.unshift(entry);
+
+            saveDict();
+            updateTable();
+        }
+
+        event.preventDefault();
+        return false;
+    }
+
+    function saveDict(){
+        localStorage.setItem("dict",JSON.stringify(dictionary));
+    }
+
+    $(document).ready(function(){
+
+        safelyDelete = localStorage.getItem("safelyDelete") == undefined ? true : eval(localStorage.getItem("safelyDelete"));
+
+        $('#safelydeletechb')[0].checked = safelyDelete;
+
+        $("#formcat").val(localStorage.getItem("category") ||  "");
+
+        $("#asTextButton").click(function(event){
+            var text = "Deutsch, Fremdsprache, Kategorie\n";
+            for (var key in dictionary){
+                var entry = dictionary[key];
+                text+=entry.german+", "+entry.foreign+", "+entry.category+"\n";
+            }
+            showText(text);
+        });
+
+        $("#learnbtn").click(function(event){
+
+            startQuestioning();
+
+        });
+
+        $("#modelearn").hide();
+
+        updateTable();
+    });
+
+    var learnIndex = 0;
+
+    function startQuestioning(){
+
+        shuffleDic();
+        sortDict();  //now they are sorted but entries with equal priorities are shuffled
+
+
+        $("#modeinput").hide();
+        $("#modelearn").show();
+
+
+
+        learnIndex = 0;
+        var entry = dictionary[learnIndex];
+        showEntry(entry);
+
+    }
+
+    function updateTable(){
+
+        if (dictionary.length){
+            $("#normalVoks").show();
+            $("#noVoks").hide();
+        } else {
+            $("#noVoks").show();
+            $("#normalVoks").hide();
+        }
+
+        $("#normalVoks > h2").html($("#normalVoks > h2").html().replace(/\(.*?\)/g,"(%s)".format(dictionary.length)));
+
+        $("tbody").empty();
+
+        $("tbody").append($("<tr><th></th><th>Deutsch</th><th>Fremdsprache</th><th>Kategorie</th><th>R. beantw.</th><th>F. beantw.</th></tr>"));
+        var z=-1;
+        for (var key in dictionary){
+            z++;
+            var entry = dictionary[key];
+            $("tbody").append(createRow(entry, z));
+        }
+
+    }
+
+    function createRow(entry, count){
+
+        return $("<tr><td><button class='classnameX' onclick='deleteentry(%s)'>X</button>&nbsp;&nbsp;</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>".format(
+
+                count,
+                entry.german,
+                entry.foreign,
+                entry.category,
+                entry.cr ? entry.cr : 0,
+                entry.cw ? entry.cw : 0
+
+        ));
+    }
+
+    function deleteentry(i){
+        safelyDelete = $('#safelydeletechb')[0].checked;
+        if (!safelyDelete || confirm("wirklich diesen eintrag löschen?")){
+            dictionary = eliminateIndex(dictionary, i);
+            updateTable();
+
+            saveDict();
+        }
+    }
+
+    function shuffle(o){ //v1.0
+        for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+        return o;
+    };
+
+    function cloneArray(arr){
+        var arrN=[];
+        for(var i in arr)arrN=arr[i];
+        return arrN;
+    }
+
+    function eliminateIndex(arr, i){
+        return arr.concat(arr.splice(i).splice(1));
+    }
+
+    function shuffleDic(){dictionary = shuffle(dictionary);}
+
+    function sortDict(){
+
+
+
+        dictionary = dictionary.sort(function(a,b){
+            var deltaA = deltaOfEntry(a);
+            var deltaB = deltaOfEntry(b);
+            if (deltaA == deltaB){
+                return countAnswered(a) < countAnswered(b) ? -1 : 1;
+                return 0;
+            }
+            return deltaA > deltaB ? -1 : 1;
+        });
+
+    }
+
+    function countAnswered(entry){
+        var cw = entry.cw ? entry.cw : 0;
+        var cr = entry.cr ? entry.cr : 0;
+        return cw+cr;
+    }
+
+    function deltaOfEntry(entry){
+        var cw = entry.cw ? entry.cw : 0;
+        var cr = entry.cr ? entry.cr : 0;
+        return cw-cr;
+    }
+
+    function gotoInput(){
+
+
+        willSkipEvaluation = false;
+
+        $("#inputvokabel").val("");
+
+        $("#modeinput").show();
+        $("#modelearn").hide();
+
+        sortDict();
+
+        saveDict();
+
+        updateTable();
+
+    }
+
+    function replaceWeirdSymbols(a){
+        try {
+            return a.replace(/ /g,"")
+        }
+        catch (e){
+            console.log(e);
+            return a;
+        }
+
+//        return a.replace("á","a").replace("í","i").replace("ó","o").replace("ú","u").replace("é","e").replace(/[^0-9a-zA-Z]/g, "");
+    }
+
+    function levenshteinDistance (s, t, ak) {
+
+        if (levenshteinDict[s+"__/DEL\\__"+t]){
+            return levenshteinDict[s+"__/DEL\\__"+t];
+        }
+
+        if (s.length === 0) return t.length;
+        if (t.length === 0) return s.length;
+
+        levenshteinDict[s+"__/DEL\\__"+t] = Math.min(
+                levenshteinDistance(s.substr(1), t, ak+1) + 1,
+                levenshteinDistance(t.substr(1), s, ak+1) + 1,
+                levenshteinDistance(s.substr(1), t.substr(1), ak+1) + (s[0] !== t[0] ? 1 : 0)
+        )
+        return levenshteinDict[s+"__/DEL\\__"+t];
+    }
+
+
+    var levenshteinDict = {};
+
+
+    function nextVokabel(){
+
+        var entry = dictionary[learnIndex];
+        var userInputMustEqual = modelearnbygerman ? entry.foreign : entry.german;
+        var userInput = $("#inputvokabel").val().trim();
+
+        var levenshtein = levenshteinDistance(replaceWeirdSymbols(userInputMustEqual), replaceWeirdSymbols(userInput));
+
+
+        entry.lastEdit = new Date().getTime();
+
+        //überprüfen
+
+        if (levenshtein > 2){
+
+            toast("LEIDER FALSCH");
+
+            $("#inputvokabel").toggleClass("dred");
+            setTimeout(function(){$("#inputvokabel").toggleClass("dred");},200);
+
+            if (!willSkipEvaluation){
+                entry.cw = (entry.cw ? entry.cw : 0)+1;
+                entry.if = 0;
+            }
+
+            dictionary[learnIndex] = entry;
+            saveDict();
+            willSkipEvaluation = true;
+
+
+        } else if (levenshtein > 0 || userInputMustEqual != userInput){
+
+            $("#inputvokabel").toggleClass("red");
+            setTimeout(function(){$("#inputvokabel").toggleClass("red");},200);
+
+            toast("fast richtig!");
+
+        } else {
+
+            if (!willSkipEvaluation){
+
+                entry.cr = (entry.cr ? entry.cr : 0)+1;
+                entry.if = (entry.if ? entry.if : 0)+1;
+
+
+                dictionary[learnIndex] = entry;
+                saveDict();
+                $("#inputvokabel").toggleClass("green");
+                setTimeout(function(){$("#inputvokabel").toggleClass("green");},200);
+            }
+
+            $("#inputvokabel").val("");
+            willSkipEvaluation=false;
+
+            if (learnIndex+1 < dictionary.length){
+                showEntry(dictionary[++learnIndex]);
+            }  else {
+                gotoInput();
+            }
+        }
+    }
+
+
+    function showSolution(){
+        var entry = dictionary[learnIndex];
+        var userInputMustEqual = modelearnbygerman ? entry.foreign : entry.german;
+        $("#inputvokabel").val(userInputMustEqual);
+        toast("SCHADE! :(");
+        entry.lastEdit = new Date().getTime();
+        if (!willSkipEvaluation){
+            entry.cw = (entry.cw ? entry.cw : 0)+1;
+            entry.if = 0;
+            dictionary[learnIndex] = entry;
+            saveDict();
+        }
+        willSkipEvaluation = true;
+    }
+
+
+
+
+    function showEntry(entry){
+
+        var a = modelearnbygerman ? entry.german : entry.foreign;
+
+        var cw = entry.cw ? entry.cw : 0;
+        var cr = entry.cr ? entry.cr : 0;
+        var $if = entry.if ? entry.if : 0;
+
+        $("#vokabel").html(a+"<span style=\"opacity:0.7;color:#222;font-size:0.7em\"><br>%s von %s mal richtig beantwortet, Quote: %s %, Sicherheit: %s<br>%s mal in Folge richtig beantwortet. Zuletzt beantwortet: %s</span>".format(
+                cr,
+                cw+cr,
+                cw+cr == 0 ? 0 : Math.round((cr/(cw+cr)*1000))/10,
+                cr-cw,
+                $if,
+                entry.lastEdit ? "vor "+getTimeStringForDelta(new Date().getTime() - new Date(entry.lastEdit).getTime()) : "-"
+        ));
+
+        $("#category").html(entry.category);
+
+    }
+
+
+
+    var modelearnbygerman = true;
+
+    window.onunload = function(){
+        safelyDelete = $('#safelydeletechb')[0].checked;
+        localStorage.setItem("safelyDelete", safelyDelete);
+    }
+
+</script>
+</head>
+<body style="background-image: url(./wallPatterns/extra_clean_paper.png);">
+<div id="main">
+
+    <div id="modeinput">
+
+        <h2>Vokabeln eingeben</h2>
+        <br>
+        <div class="">
+            Kategorie
+            <input placeholder="Z. B. Lektion 1" type="text" id="formcat" size="30"  />
+        </div>
+        <br>
+        <br>
+        <div class="left">
+
+            Deutsch
+            <form onsubmit="submitF(event, this, true);">
+                <input id="germaninput"  type="text" size="40" />
+            </form>
+
+        </div>
+
+        <div class="right">
+
+            Fremdsprache
+            <form onsubmit="submitF(event, this, false);">
+                <input id="fremdinput" type="text" size="40"     />
+            </form>
+
+        </div>
+
+        <br>
+        <br>
+        Bestätigen mit ENTER/RETURN
+        <br>
+        <i>Hinweis: Du kannst auch zuerst das Wort in der Fremdsprache eingeben. Der Cursor springt automatisch in das nächste Feld.</i>
+        <br>
+        <br>
+        <hr>
+
+        <div id="normalVoks">
+            <h2>Vokabeln (0)</h2>
+            <button class="classname" id="asTextButton">als Text exportieren</button>
+            <button class="classname"  id="learnbtn">Jetzt abfragen!</button>
+            <br>
+            <br>Immer nachfragen beim Löschen
+            <input type="checkbox" id="safelydeletechb" checked="checked" />
+            <br>
+            <br>
+            <table width="100%">
+                <tbody id="tbody">
+                </tbody>
+            </table>
+            <br>
+            <br>
+            <button  class="classname" onclick="openImportWindow()">Importieren</button>
+            <button  class="classname" onclick="deleteAll()">Alle löschen</button>
+        </div><div id="noVoks">
+        <br>
+            Vokabeln werden angezeigt, sobald welche angelegt wurden
+        <br>
+        <br>
+        <button  class="classname" onclick="openImportWindow()">Importieren</button>
+        </div>
+
+    </div>
+    <div id="modelearn" style="text-align: center">
+
+        <h2>Vokabeln abfragen</h2>
+        <button class="classname"  onclick="gotoInput()">Zurück zur Übersicht</button>
+
+        <h3 id="vokabel"></h3>
+
+        <form id="vokabelform" onsubmit="nextVokabel();event.preventDefault();return false;">
+        <input autocomplete="off" type="text" size="40" id="inputvokabel" />
+            <br>
+            <br>
+            <input class="classname"  type="submit" value="Weiter" />
+
+        </form>
+<br>
+<br>
+        <button  class="classname" onclick="showSolution()">Lösung anzeigen</button>
+
+
+    </div>
+
+    <br>
+    <hr>
+    <div style="text-align: center">
+        <p>&nbsp;</p><p>Kontakt:<br />
+        <span id="zks233478"></span>
+        <script type="text/javascript">function z05798(){var g="%7B%22f%22%3A%5B%2259%22%2C%2222%22%2C%226%22%2C%2236%22%2C%2223%22%2C%2241%22%2C%2250%22%2C%2239%22%2C%2220%22%2C%2218%22%2C%2249%22%2C%2266%22%2C%2267%22%2C%2265%22%2C%2233%22%2C%229%22%2C%2213%22%2C%2257%22%2C%2258%22%2C%2255%22%2C%2219%22%2C%2228%22%2C%2248%22%2C%2227%22%2C%2261%22%2C%2215%22%2C%225%22%2C%2245%22%2C%227%22%2C%2234%22%2C%2221%22%2C%228%22%2C%2242%22%2C%2264%22%2C%2247%22%2C%2230%22%2C%2235%22%2C%2263%22%2C%2268%22%2C%2240%22%2C%2246%22%2C%223%22%2C%222%22%2C%2262%22%2C%2231%22%2C%2253%22%2C%224%22%2C%220%22%2C%2212%22%2C%2244%22%2C%2214%22%2C%2269%22%2C%2256%22%2C%2270%22%2C%2210%22%2C%2224%22%2C%2251%22%2C%2232%22%2C%2211%22%2C%2254%22%2C%2225%22%2C%2216%22%2C%2237%22%2C%2229%22%2C%2252%22%2C%2217%22%2C%2260%22%2C%2238%22%2C%2226%22%2C%2243%22%2C%221%22%5D%2C%22s%22%3A%22mefagoa.jljm%3Colmt@g8f@f5i%3Aer%3Dea%5C%22mclom./cah%20loer%3Cl%3Eoa5%3Eaeegirrriggaal8%5C%22a%22%7D",a = JSON.parse(unescape(g)),b=[],c=0;for(var i in a.f){b[a.f[i]] = a.s[c++];}return b.join("");};document.getElementById("zks233478").innerHTML=z05798();</script>
+        <br /><a style="text-decoration: none" target="_blank" href="http://www.ralfworks.de/impressum">Impressum</a></p>
+    </div>
+
+</div>
+<div style="display:none" id="cautionDialog" title="Achtung!">
+    <span class="ui-icon ui-icon-info" style=""></span>
+    <p>Achtung, hierbei werden alle vorhandenen Vokabeln gelöscht!</p>
+</div>
+<div style="display:none" id="textBox" title="">
+    <!--<span class="ui-icon ui-icon-alert" style=""></span>-->
+    <textarea type="textBoxArea" style="width: 300px; height: 250px;"></textarea>
+</div>
+<br>
+<br>
+
+
+</body></html>

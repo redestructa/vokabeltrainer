@@ -26,57 +26,40 @@
     };
 
         function openImportWindow(){
-
-            var title = "Import von Vokabeln, Textstruktur muss aussehen wie bei Export";
-
-            if ($("#textBox").length)
-                $("#textBox").remove();
-
-            $("body").append('<div style="display:none" id="textBox" title="'+title+'"><textarea type="textBoxArea" style="width: 97%; height: 97%;">'+''+'</textarea></div>');
-
-            setTimeout(function(){
-                $( "#textBox").dialog({
-                    resizable: true,
-                    "width":600,
-                    "height":500,
-                    modal: false,
-                    buttons: {
-                        "Abbrechen": function() {
-                            $( this ).dialog( "close" );
-                        },
-                        "OK": function() {
-
-
-                            $( this ).dialog( "close" );
-                            importThisOnConfirm($( "#textBox textarea").val());
-
-                        }
-                    }
-                });
-            },0);
-
+            showText("",title,function(){importThisOnConfirm($( "#textBox textarea").val());});
         }
 
-        function showText(text, title){
+        function showText(text, title, onOkFunc){
 
             title=title || "Text";
+            text=text || "";
 
             if ($("#textBox").length)
                 $("#textBox").remove();
 
             $("body").append('<div style="display:none" id="textBox" title="'+title+'"><textarea type="textBoxArea" style="width: 97%; height: 97%;">'+text+'</textarea></div>');
 
+            var buttons = onOkFunc ? {
+                        "Abbrechen": function() {
+                            $( this ).dialog( "close" );
+                        },
+                        "OK": function() {
+                            onOkFunc();
+                            $( this ).dialog( "close" );
+                        }
+                    } : {
+                        "Schließen": function() {
+                            $( this ).dialog( "close" );
+                        }
+                    };
+
             setTimeout(function(){
                 $( "#textBox").dialog({
                     resizable: true,
                     "width":600,
                     "height":500,
                     modal: false,
-                    buttons: {
-                        "Schließen": function() {
-                            $( this ).dialog( "close" );
-                        }
-                    }
+                    buttons: buttons
                 });
             },0);
 

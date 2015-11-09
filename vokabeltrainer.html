@@ -25,54 +25,61 @@
         return newStr;
     };
 
-        function showText(text, title){
-            var height=300,width=700;
-            title=title || "Text";
-            $( "#textBox").attr("title",title);
-            $( "#textBox textarea").val(text);
-            $( "#textBox textarea").css({
-                "width" : width ,
-                "height" : height
-            });
-            $( "#textBox" ).dialog({
-                resizable: false,
-                height:height+160,
-                width:"auto",
-                modal: false,
-                buttons: {
-                    "Schließen": function() {
-                        $( this ).dialog( "close" );
+        function openImportWindow(){
+
+            var title = "Import von Vokabeln, Textstruktur muss aussehen wie bei Export";
+
+            if ($("#textBox").length)
+                $("#textBox").remove();
+
+            $("body").append('<div style="display:none" id="textBox" title="'+title+'"><textarea type="textBoxArea" style="width: 97%; height: 97%;">'+''+'</textarea></div>');
+
+            setTimeout(function(){
+                $( "#textBox").dialog({
+                    resizable: true,
+                    "width":600,
+                    "height":500,
+                    modal: false,
+                    buttons: {
+                        "Abbrechen": function() {
+                            $( this ).dialog( "close" );
+                        },
+                        "OK": function() {
+
+
+                            $( this ).dialog( "close" );
+                            importThisOnConfirm($( "#textBox textarea").val());
+
+                        }
                     }
-                }
-            });
+                });
+            },0);
+
         }
 
-        function openImportWindow(){
-            var height=300,width=700;
-            $( "#textBox").attr("title","Import von Vokabeln, Textstruktur muss aussehen wie bei Export");
-            $( "#textBox textarea").val("");
-            $( "#textBox textarea").css({
-                "width" : width ,
-                "height" : height
-            });
-            $( "#textBox" ).dialog({
-                resizable: false,
-                height:height+160,
-                width:"auto",
-                modal: false,
-                buttons: {
-                    "Abbrechen": function() {
-                        $( this ).dialog( "close" );
-                    },
-                    "OK": function() {
+        function showText(text, title){
 
+            title=title || "Text";
 
-                        $( this ).dialog( "close" );
-                        importThisOnConfirm($( "#textBox textarea").val());
+            if ($("#textBox").length)
+                $("#textBox").remove();
 
+            $("body").append('<div style="display:none" id="textBox" title="'+title+'"><textarea type="textBoxArea" style="width: 97%; height: 97%;">'+text+'</textarea></div>');
+
+            setTimeout(function(){
+                $( "#textBox").dialog({
+                    resizable: true,
+                    "width":600,
+                    "height":500,
+                    modal: false,
+                    buttons: {
+                        "Schließen": function() {
+                            $( this ).dialog( "close" );
+                        }
                     }
-                }
-            });
+                });
+            },0);
+
         }
 
         function importThisOnConfirm(val){
@@ -370,7 +377,7 @@
                 var entry = dictionary[key];
                 text+=entry.german+", "+entry.foreign+", "+entry.category+"\n";
             }
-            showText(text);
+            showText(text, "Export");
         });
 
         $("#learnbtn").click(function(event){
@@ -761,10 +768,7 @@
     <span class="ui-icon ui-icon-info" style=""></span>
     <p>Achtung, hierbei werden alle vorhandenen Vokabeln gelöscht!</p>
 </div>
-<div style="display:none" id="textBox" title="">
-    <!--<span class="ui-icon ui-icon-alert" style=""></span>-->
-    <textarea type="textBoxArea" style="width: 300px; height: 250px;"></textarea>
-</div>
+
 <br>
 <br>
 

@@ -9,4 +9,4 @@ Validation is done in JS.
 There is also a possibility to export and import vocabulary data.
 
 ## Demo
-http://www.zahulo.de/vokabeltrainer.html
+simply run the vokabeltrainer.html file in your browser
